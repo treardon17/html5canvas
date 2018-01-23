@@ -28,6 +28,11 @@ export default {
     ]
 
     return {
+      ball: {
+        x: 250,
+        y: 0,
+        vy: 0
+      },
       canvasWidth: 0,
       canvasHeight: 0,
       selectField: options[0],
@@ -43,6 +48,7 @@ export default {
   mounted: function () {
     log('Mounted')
     this.setCanvasSize()
+    this.setupListeners()
   },
   computed: {
   },
@@ -56,6 +62,7 @@ export default {
       this.draw()
     },
     windowResize () {
+      console.log('resizing')
       this.setCanvasSize()
     },
     clear () {
@@ -87,7 +94,7 @@ export default {
           this.animateLine({ x: 0, y: this.$refs.canvas.height / 2, clear: true })
           break
         case 'animate-ball':
-          this.animateBall({ x: this.$refs.canvas.width, y: this.$refs.canvas.height, ceiling: this.$refs.canvas.height / 2, dx: 4, dy: 4 })
+          this.animateBall({ x: this.$refs.canvas.width / 2, y: 0, floor: this.$refs.canvas.height, ceiling: 0, dx: 0, dy: 6 })
           break
         default:
           return
@@ -169,40 +176,52 @@ export default {
         newDx = -newDx
       }
       this.animationFrame = requestAnimationFrame(() => { this.animateLine({ x: newX, y, clear, dx: newDx }) })
+    },
+    /**
+     * ANIMATE BALL
+     */
+    animateBall ({ x = 0, y = 0, ceiling, floor, dx = 4, dy = 4 }) {
+      const canvas = this.$refs.canvas
+      const ctx = canvas.getContext('2d')
+      this.clear()
+
+      // CREATE THE BALL
+      // calculate the center of the canvas
+      const radius = 40
+      const startAngle = 0
+      const endAngle = 2 * Math.PI
+      ctx.fillStyle = this.colors.green
+      ctx.moveTo(x, y)
+      ctx.beginPath()
+      ctx.arc(x, y, radius, startAngle, endAngle)
+      ctx.stroke()
+      ctx.fill()
+
+      let newCeiling = ceiling
+      let newDy = dy
+      // The ball needs to be at rest if the ceiling is too small
+      if (floor - ceiling < 2) {
+        dy = 0
+      }
+
+      // The ball hit the ground
+      if (y >= floor - radius) {
+        const multiplier = 0.5
+        newCeiling += ceiling === 0 ? (floor * multiplier) : (ceiling * multiplier)
+        newDy = -dy
+      } else if (y < ceiling) {
+        // The ball hit the max height
+        newDy = -dy
+      }
+
+      // Calculate our progress through the arc
+      const distance = floor - ceiling
+      const position = floor - y
+      const progress = position / distance
+      let newY = y + (newDy * (1 - (progress * 0.99)))
+
+      this.animationFrame = requestAnimationFrame(() => { this.animateBall({ x, y: newY, ceiling: newCeiling, floor, dx, dy: newDy }) })
     }
-  },
-  /**
-   * ANIMATE BALL
-   */
-  animateBall ({ x = 0, y = 0, ceiling, dx = 4, dy = 4 }) {
-    debugger // eslint-disable-line
-    const canvas = this.$refs.canvas
-    const ctx = canvas.getContext('2d')
-
-    // CREATE THE BALL
-    // calculate the center of the canvas
-    const xPos = canvas.width / 2
-    const yPos = canvas.height / 2
-    const radius = 40
-    const startAngle = 0
-    const endAngle = 2 * Math.PI
-
-    ctx.fillStyle = this.colors.green
-    ctx.moveTo(xPos, yPos)
-    ctx.beginPath()
-    ctx.arc(xPos, yPos, radius, startAngle, endAngle)
-    ctx.stroke()
-    ctx.fill()
-
-    let newCeiling = ceiling
-    let newDy = dy
-    if (y >= ceiling) {
-      newCeiling = ceiling / 2
-      newDy = -dy
-    }
-    let newY = y + newDy
-
-    this.animationFrame = requestAnimationFrame(() => { this.animateBall({ x, y: newY, ceiling: newCeiling, dx, dy: newDy }) })
   },
   components: {
   }
