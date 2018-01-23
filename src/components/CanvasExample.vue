@@ -23,7 +23,8 @@ export default {
       { value: 'draw-circle', text: 'draw circle' },
       { value: 'draw-rect', text: 'draw rect' },
       { value: 'animate-line-progress', text: 'animate line progress' },
-      { value: 'animate-line-move', text: 'animate line move' }
+      { value: 'animate-line-move', text: 'animate line move' },
+      { value: 'animate-ball', text: 'animate ball' }
     ]
 
     return {
@@ -84,6 +85,9 @@ export default {
           break
         case 'animate-line-move':
           this.animateLine({ x: 0, y: this.$refs.canvas.height / 2, clear: true })
+          break
+        case 'animate-ball':
+          this.animateBall({ x: this.$refs.canvas.width, y: this.$refs.canvas.height, ceiling: this.$refs.canvas.height / 2, dx: 4, dy: 4 })
           break
         default:
           return
@@ -147,28 +151,58 @@ export default {
     /**
      * ANIMATE LINE
      */
-    animateLine ({ x, y, clear, change }) {
+    animateLine ({ x, y, clear, dx = 1 }) {
       if (clear) { this.clear() }
+      let newDx = dx
+      let newX = x + newDx
       const ctx = this.$refs.canvas.getContext('2d')
       const extent = 100
       ctx.strokeStyle = this.colors.white
       ctx.lineWidth = 10
       ctx.beginPath()
-      ctx.moveTo(x, y)
-      ctx.lineTo(x + extent, y)
+      ctx.moveTo(newX, y)
+      ctx.lineTo(newX + extent, y)
       ctx.stroke()
       // Bounce off the walls of the canvas
-      let newChange = change
-      if (x === 0) {
-        // if the left side of the rectangle hit the left side of the canvas
-        newChange = 1
-      } else if (x === this.$refs.canvas.width - extent) {
-        // if the right side of the rectange hit the right side of the canvas
-        newChange = -1
+      if (newX <= 0 || newX >= this.$refs.canvas.width - extent) {
+        debugger // eslint-disable-line
+        newDx = -newDx
       }
-      const newX = x + newChange
-      this.animationFrame = requestAnimationFrame(() => { this.animateLine({ x: newX, y, clear, change: newChange }) })
+      this.animationFrame = requestAnimationFrame(() => { this.animateLine({ x: newX, y, clear, dx: newDx }) })
     }
+  },
+  /**
+   * ANIMATE BALL
+   */
+  animateBall ({ x = 0, y = 0, ceiling, dx = 4, dy = 4 }) {
+    debugger // eslint-disable-line
+    const canvas = this.$refs.canvas
+    const ctx = canvas.getContext('2d')
+
+    // CREATE THE BALL
+    // calculate the center of the canvas
+    const xPos = canvas.width / 2
+    const yPos = canvas.height / 2
+    const radius = 40
+    const startAngle = 0
+    const endAngle = 2 * Math.PI
+
+    ctx.fillStyle = this.colors.green
+    ctx.moveTo(xPos, yPos)
+    ctx.beginPath()
+    ctx.arc(xPos, yPos, radius, startAngle, endAngle)
+    ctx.stroke()
+    ctx.fill()
+
+    let newCeiling = ceiling
+    let newDy = dy
+    if (y >= ceiling) {
+      newCeiling = ceiling / 2
+      newDy = -dy
+    }
+    let newY = y + newDy
+
+    this.animationFrame = requestAnimationFrame(() => { this.animateBall({ x, y: newY, ceiling: newCeiling, dx, dy: newDy }) })
   },
   components: {
   }
