@@ -12,6 +12,7 @@
 </template>
 
 <script>
+import Particle from '../scripts/particle'
 import debug from 'debug'
 let log = debug('component:CanvasExample')
 export default {
@@ -19,6 +20,7 @@ export default {
   props: [],
   data () {
     const options = [
+      { value: 'animate-particle', text: 'animate particle' },
       { value: 'draw-line', text: 'draw line' },
       { value: 'draw-circle', text: 'draw circle' },
       { value: 'draw-rect', text: 'draw rect' },
@@ -94,7 +96,10 @@ export default {
           this.animateLine({ x: 0, y: this.$refs.canvas.height / 2, clear: true })
           break
         case 'animate-ball':
-          this.animateBall({ x: this.$refs.canvas.width / 2, y: 0, floor: this.$refs.canvas.height, ceiling: 0, dx: 0, dy: 6 })
+          this.animateBall()
+          break
+        case 'animate-particle':
+          this.animateParticle()
           break
         default:
           return
@@ -180,47 +185,48 @@ export default {
     /**
      * ANIMATE BALL
      */
-    animateBall ({ x = 0, y = 0, ceiling, floor, dx = 4, dy = 4 }) {
+    animateBall () {
       const canvas = this.$refs.canvas
       const ctx = canvas.getContext('2d')
       this.clear()
 
       // CREATE THE BALL
       // calculate the center of the canvas
+      const gravity = 0.25
       const radius = 40
       const startAngle = 0
       const endAngle = 2 * Math.PI
+      const bounceMultiplier = 0.8
+
+      // Update
+      this.ball.vy += gravity
+      this.ball.y += this.ball.vy
+
+      // The ball hit the ground
+      if (this.ball.y >= this.$refs.canvas.height - radius) {
+        this.ball.vy *= -bounceMultiplier
+        this.ball.y = this.$refs.canvas.height - radius
+      }
+
+      // Render
       ctx.fillStyle = this.colors.green
-      ctx.moveTo(x, y)
+      ctx.moveTo(this.ball.x, this.ball.y)
       ctx.beginPath()
-      ctx.arc(x, y, radius, startAngle, endAngle)
+      ctx.arc(this.ball.x, this.ball.y, radius, startAngle, endAngle)
       ctx.stroke()
       ctx.fill()
 
-      let newCeiling = ceiling
-      let newDy = dy
-      // The ball needs to be at rest if the ceiling is too small
-      if (floor - ceiling < 2) {
-        dy = 0
-      }
-
-      // The ball hit the ground
-      if (y >= floor - radius) {
-        const multiplier = 0.5
-        newCeiling += ceiling === 0 ? (floor * multiplier) : (ceiling * multiplier)
-        newDy = -dy
-      } else if (y < ceiling) {
-        // The ball hit the max height
-        newDy = -dy
-      }
-
-      // Calculate our progress through the arc
-      const distance = floor - ceiling
-      const position = floor - y
-      const progress = position / distance
-      let newY = y + (newDy * (1 - (progress * 0.99)))
-
-      this.animationFrame = requestAnimationFrame(() => { this.animateBall({ x, y: newY, ceiling: newCeiling, floor, dx, dy: newDy }) })
+      this.animationFrame = requestAnimationFrame(() => { this.animateBall() })
+    },
+    /**
+     * ANIMATE PARTICLE
+     */
+    animateParticle () {
+      const canvas = this.$refs.canvas
+      const ctx = canvas.getContext('2d')
+      const particle = new Particle({ color: this.colors.green, x: canvas.width / 2, y: 0, vy: 4, vx: 0 })
+      particle.render(ctx)
+      particle.update({ boundX: canvas.width, boundY: canvas.height })
     }
   },
   components: {
