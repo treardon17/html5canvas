@@ -28,6 +28,7 @@ export default {
       { value: 'animate-line-move', text: 'animate line move' },
       { value: 'animate-ball', text: 'animate ball' }
     ]
+    const { width, height } = this.getCanvasSize()
 
     return {
       ball: {
@@ -35,8 +36,8 @@ export default {
         y: 0,
         vy: 0
       },
-      canvasWidth: 0,
-      canvasHeight: 0,
+      canvasWidth: width,
+      canvasHeight: height,
       selectField: options[0],
       options,
       colors: {
@@ -59,9 +60,16 @@ export default {
       window.addEventListener('resize', this.windowResize.bind(this))
     },
     setCanvasSize () {
-      this.canvasWidth = window.innerWidth * 0.6
-      this.canvasHeight = window.innerHeight * 0.3
+      const { width, height } = this.getCanvasSize()
+      this.canvasWidth = width
+      this.canvasHeight = height
       this.draw()
+    },
+    getCanvasSize () {
+      return {
+        width: window.innerWidth * 0.9,
+        height: window.innerHeight * 0.7
+      }
     },
     windowResize () {
       console.log('resizing')
@@ -224,9 +232,8 @@ export default {
     animateParticle () {
       const canvas = this.$refs.canvas
       const ctx = canvas.getContext('2d')
-      const particle = new Particle({ color: this.colors.green, x: canvas.width / 2, y: 0, vy: 4, vx: 0 })
-      particle.render(ctx)
-      particle.update({ boundX: canvas.width, boundY: canvas.height })
+      const particle = new Particle({ color: this.colors.green, x: canvas.width / 2, y: 0, vy: 4, vx: 0, context: ctx })
+      particle.start()
     }
   },
   components: {
