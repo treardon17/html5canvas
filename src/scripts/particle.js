@@ -1,11 +1,12 @@
 export default class Particle {
-  constructor ({ x = 0, y = 0, vx = 0, vy = 0, radius = 15, restitution = 0.8, gravity = 0.25, color = '#ffffff', context }) {
+  constructor ({ x = 0, y = 0, vx = 0, vy = 0, xGravity = 0, yGravity = 0.25, radius = 50, restitution = 0.8, color = '#ffffff', context }) {
     this.x = x
     this.y = y
     this.vx = vx
     this.vy = vy
+    this.yGravity = yGravity
+    this.xGravity = xGravity
     this.ctx = context
-    this.gravity = gravity
     this.restitution = restitution
     this.radius = radius
     this.color = color
@@ -24,8 +25,12 @@ export default class Particle {
   }
 
   clear = () => {
-    const dim = this.radius * 2
-    this.ctx.clearRect(this.x - this.radius, this.y - this.radius, dim, dim)
+    const canvas = this.ctx.canvas
+    this.ctx.clearRect(0, 0, canvas.width, canvas.height)
+  }
+
+  reduceRadius = () => {
+    this.radius *= 0.99
   }
 
   update = () => {
@@ -34,20 +39,21 @@ export default class Particle {
     const boundY = this.ctx.canvas.height
 
     // Update
-    this.vy += this.gravity
+    this.vy += this.yGravity
     this.y += this.vy
 
-    this.vx += this.gravity
+    this.vx += this.xGravity
     this.x += this.vx
 
     if (this.y >= boundY - this.radius) {
       // GROUND
       this.vy *= -this.restitution
       this.y = boundY - this.radius
+      // this.reduceRadius()
     } else if (this.y <= 0 + this.radius) {
       // CEILING
-      this.vy *= -this.restitution
-      this.y = 0 + this.radius
+      // this.vy *= -this.restitution
+      // this.y = 0 + this.radius
     }
 
     if (this.x >= boundX - this.radius) {

@@ -9,6 +9,15 @@
         button(@click="draw") draw
         button(@click="clear") clear
         button(@click="stop") stop
+      .options
+        label yVelocity
+        input(v-model="yVelocity" data-name="vy" type="number" @change="valuesChanged")
+        label yGravity
+        input(v-model="yGravity" data-name="yGravity" type="number" @change="valuesChanged")
+        label xVelocity
+        input(v-model="xVelocity" data-name="vx" type="number" @change="valuesChanged")
+        label xGravity
+        input(v-model="xGravity" data-name="xGravity" type="number" @change="valuesChanged")
 </template>
 
 <script>
@@ -31,14 +40,15 @@ export default {
     const { width, height } = this.getCanvasSize()
 
     return {
-      ball: {
-        x: 250,
-        y: 0,
-        vy: 0
-      },
+      ball: { x: 250, y: 0, vy: 0 },
+      particles: [],
       canvasWidth: width,
       canvasHeight: height,
       selectField: options[0],
+      xGravity: 0,
+      yGravity: 0.25,
+      yVelocity: 0,
+      xVelocity: 0,
       options,
       colors: {
         green: '#42b983',
@@ -68,7 +78,7 @@ export default {
     getCanvasSize () {
       return {
         width: window.innerWidth * 0.9,
-        height: window.innerHeight * 0.7
+        height: window.innerHeight * 0.4
       }
     },
     windowResize () {
@@ -85,6 +95,12 @@ export default {
     stop () {
       window.cancelAnimationFrame(this.animationFrame)
       this.clear()
+
+      if (this.selectField.value === 'animate-particle') {
+        for (let i = 0; i < this.particles.length; i++) {
+          this.particles[i].stop()
+        }
+      }
     },
     draw () {
       switch (this.selectField.value) {
@@ -232,8 +248,36 @@ export default {
     animateParticle () {
       const canvas = this.$refs.canvas
       const ctx = canvas.getContext('2d')
-      const particle = new Particle({ color: this.colors.green, x: canvas.width / 2, y: 0, vy: 4, vx: 0, context: ctx })
+      const particle = new Particle({
+        color: this.colors.green,
+        x: canvas.width / 2,
+        y: 0,
+        vy: this.yVelocity,
+        vx: this.xVelocity,
+        xGravity: this.xGravity,
+        yGravity: this.yGravity,
+        context: ctx
+      })
       particle.start()
+      this.particles.push(particle)
+    },
+    valuesChanged (event) {
+      const { target } = event
+      const attrName = target.attributes['data-name'].value
+      const value = target.value
+      const parameters = {}
+      parameters[attrName] = value
+      this.updateParticles(parameters)
+    },
+    updateParticles (newVals) {
+      for (let i = 0; i < this.particles.length; i++) {
+        const particle = this.particles[i]
+        const keys = Object.keys(newVals)
+        for (let keyIndex = 0; keyIndex < keys.length; keyIndex++) {
+          const key = keys[keyIndex]
+          particle[key] = parseFloat(newVals[key])
+        }
+      }
     }
   },
   components: {
@@ -248,7 +292,7 @@ export default {
   display: flex;
   justify-content: center;
   align-items: center;
-  height: 100vh;
+  min-height: 100vh;
   width: 100%;
   background-color: $brandDark;
 
@@ -273,6 +317,9 @@ export default {
         margin-right: 10px;
         &:last-child{ margin-right: 0; }
       }
+    }
+    .options{
+      input{ display: block; }
     }
   }
 }
